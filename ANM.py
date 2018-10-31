@@ -1,6 +1,7 @@
 from harmonic import Harmonic_Analysis
 from node import Node
 import numpy as np
+from scipy.spatial import distance
 
 class ANM(Harmonic_Analysis):
 
@@ -39,7 +40,7 @@ class ANM(Harmonic_Analysis):
             return -1 * gamma * A * B / (distance ** 2)
         else:
             return 0
-    
+
     def build_hessian(self):
         """
         The hessian is an NxN matrix of 3x3 submatrices where N is the
@@ -48,6 +49,22 @@ class ANM(Harmonic_Analysis):
         """
         #Faster to work with a list of np arrays and convert to array at the end
         Hessian = []
-        for i in range(len(self.nodes)):
+        for node_i in self.nodes:
+            for node_j in self.nodes:
+                print(node_i.xyz, node_j.xyz)
+                #np.array[ROW, COLUMN]
+                super_element = np.zeros((3,3), dtype=float)
+                dist = distance.euclidean(node_i.xyz, node_j.xyz)
+                print(dist)
+                print(1.0/dist)
+                for i in range(3):
+                    for j in range(3):
+                        A = node_i.xyz[i] - node_j.xyz[i]
+                        B = node_i.xyz[j] - node_j.xyz[j]
+                        print(self.force_deriv_2(1.0, dist, A, B, 15.00))
+                        super_element[i,j] = self.force_deriv_2(1.0, dist, A, B, 15.00)
+                Hessian.append(super_element)
+        return np.asarray(Hessian)
 
-ANM("pdb4cms.pdb").build_hessian()
+if __name__ == "__main__":
+    print(ANM("pdb4cms.pdb").build_hessian())
