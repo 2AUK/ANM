@@ -1,11 +1,11 @@
-import harmonic
-import node
+from harmonic import Harmonic_Analysis
+from node import Node
 import numpy as np
 
 class ANM(Harmonic_Analysis):
 
     def __init__(self, input_file):
-        self.nodes
+        self.nodes = []
         self.__read_pdb(input_file)
 
     def __read_pdb(self, input_file):
@@ -18,9 +18,10 @@ class ANM(Harmonic_Analysis):
                 line = line.split()
                 if line[0] == "ATOM" and line[2] == "CA":
                     #Node object -> Node(Acid_name, np.array([X, Y, Z]))
-                    self.nodes.append(Node(line[3], np.array([line[6] \
-                                                              line[7] \
-                                                              line[8]])))
+                    self.nodes.append(Node(line[3], np.array([float(line[6]), \
+                                                              float(line[7]), \
+                                                              float(line[8])]  \
+                                                              )))
 
     def force_deriv_2(self, gamma, distance, A, B, cutoff):
         """
@@ -32,6 +33,7 @@ class ANM(Harmonic_Analysis):
         |        2 coordinates. A and B are just generalised forms and are
         |        defined as such - A_ij = (A_j - A_i) where A is either 
         |        x, y or z.
+        | cutoff - a cutoff for where to determine interactions up to.
         """
         if distance < cutoff:
             return -1 * gamma * A * B / (distance ** 2)
@@ -43,4 +45,9 @@ class ANM(Harmonic_Analysis):
         The hessian is an NxN matrix of 3x3 submatrices where N is the
         number of nodes. Interactions are only considered if the distance
         is lower than a cut-off (typically ~15A).
+        """
+        #Faster to work with a list of np arrays and convert to array at the end
+        Hessian = []
+        for i in range(len(self.nodes)):
 
+ANM("pdb4cms.pdb").build_hessian()
