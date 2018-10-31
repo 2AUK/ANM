@@ -1,0 +1,1 @@
+Anisotropic Network Model for 4CMS (should ideally work for any protein)
