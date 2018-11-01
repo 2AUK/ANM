@@ -24,9 +24,10 @@ class ANM(Harmonic_Analysis):
                                                               float(line[8])]  \
                                                               )))
 
-    def force_deriv_2(self, gamma, distance, A, B, cutoff):
+    def force_deriv_2_prod_gamma(self, gamma, distance, A, B, cutoff):
         """
         Calculates second derivative of potential energy for hessian
+        With gamma function implicitly multiplied
         Required for hessian matrix
         | gamma - force constant (uniform across network)
         | distance - distance between two nodes
@@ -49,21 +50,25 @@ class ANM(Harmonic_Analysis):
         """
         #Faster to work with a list of np arrays and convert to array at the end
         Hessian = []
+        #Build off-diagonal elements of Hessian first
         for node_i in self.nodes:
             for node_j in self.nodes:
-                print(node_i.xyz, node_j.xyz)
                 #np.array[ROW, COLUMN]
                 super_element = np.zeros((3,3), dtype=float)
-                dist = distance.euclidean(node_i.xyz, node_j.xyz)
-                print(dist)
-                print(1.0/dist)
-                for i in range(3):
-                    for j in range(3):
-                        A = node_i.xyz[i] - node_j.xyz[i]
-                        B = node_i.xyz[j] - node_j.xyz[j]
-                        print(self.force_deriv_2(1.0, dist, A, B, 15.00))
-                        super_element[i,j] = self.force_deriv_2(1.0, dist, A, B, 15.00)
+                if node_i != node_j:
+                    dist = distance.euclidean(node_i.xyz, node_j.xyz)
+                    for i in range(3):
+                        for j in range(3):
+                            A = node_i.xyz[i] - node_j.xyz[i]
+                            B = node_i.xyz[j] - node_j.xyz[j]
+                            super_element[i,j] = self.force_deriv_2_prod_gamma(1.0, dist, A, B, 15.00)
                 Hessian.append(super_element)
+        #Build diagonal super-elements now
+        size = 3*(len(self.nodes))
+        Hessian = np.resize(np.asarray(Hessian), (size, size))
+        Hessian = np.asarray(Hessian)
+        row,col = np.diag_indices_from(Hessian)
+        Hessian[row,col] = Hessian.sum(axis=0)
         return np.asarray(Hessian)
 
 if __name__ == "__main__":
