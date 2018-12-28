@@ -54,9 +54,10 @@ class ANM(Harmonic_Analysis):
         """
         hessian = np.zeros((3*len(self.nodes), 3*len(self.nodes)))
         K_mat = self.__kirchoff_matrix(cut_off)
+        print(len(self.nodes), 3*len(self.nodes))
         #Off-Diagonals
-        for i, node_i in enumerate(self.nodes):
-            for j, node_j in enumerate(self.nodes):
+        for i, node_i in enumerate2(self.nodes,step = 3):
+            for j, node_j in enumerate2(self.nodes,step = 3):
                 s0_ij = distance.euclidean(node_i.xyz, node_j.xyz)
                 if node_i != node_j:
                     for k in range(3):
@@ -67,11 +68,10 @@ class ANM(Harmonic_Analysis):
                             print(i, j, k, l, i+k, j+l)
                 else:
                     #On-Diagonals
-                    for i in range(3):
-                        for j in range(3):
+                    for k in range(3):
+                        for l in range(3):
                             pass
         return hessian
-
     # def build_hessian(self):
     #     """
     #     The hessian is an NxN matrix of 3x3 submatrices where N is the
@@ -99,6 +99,11 @@ class ANM(Harmonic_Analysis):
     #     Hessian = np.resize(np.asarray(Hessian), (size, size))
     #     # Hessian[row,col] = Hessian.sum(axis=0)
     #     return np.asarray(Hessian)
+
+def enumerate2(xs, start=0, step=1):
+    for x in xs:
+        yield (start, x)
+        start += step
 
 if __name__ == "__main__":
     print(ANM("4ake.pdb").build_hessian(15.00, 1))
