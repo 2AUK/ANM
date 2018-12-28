@@ -47,17 +47,30 @@ class ANM(Harmonic_Analysis):
     def build_hessian(self, cut_off, gamma):
         """
         Hessian matrix builds from Kirchoff matrix
-        Atilgan et al. Biophysical Journal Volume 80 2001
+        Atilgan, A.R., Durell, S.R., Jernigan, R.L., Demirel, M.C., Keskin, O. and Bahar, I., 2001. Anisotropy of fluctuation dynamics of proteins with an elastic network model. Biophysical journal, 80(1), pp.505-515.
         for details of 2nd derivative forms
         Elements for each dimension
         3Nx3N matrix
         """
+        hessian = np.zeros((3*len(self.nodes), 3*len(self.nodes)))
         K_mat = self.__kirchoff_matrix(cut_off)
         #Off-Diagonals
         for i, node_i in enumerate(self.nodes):
             for j, node_j in enumerate(self.nodes):
-                pass
-
+                s0_ij = distance.euclidean(node_i.xyz, node_j.xyz)
+                if node_i != node_j:
+                    for k in range(3):
+                        for l in range(3):
+                            A = node_i.xyz[k] - node_j.xyz[k]
+                            B = node_i.xyz[l] - node_j.xyz[l]
+                            hessian[i+k,j+l] = -1.0 * gamma * A * B / (s0_ij * s0_ij)
+                            print(i, j, k, l, i+k, j+l)
+                else:
+                    #On-Diagonals
+                    for i in range(3):
+                        for j in range(3):
+                            pass
+        return hessian
 
     # def build_hessian(self):
     #     """
@@ -88,4 +101,4 @@ class ANM(Harmonic_Analysis):
     #     return np.asarray(Hessian)
 
 if __name__ == "__main__":
-    np.savetxt("out.txt", (ANM("4ake.pdb").kirchoff_matrix(15.00)))
+    print(ANM("4ake.pdb").build_hessian(15.00, 1))
