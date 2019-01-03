@@ -2,6 +2,7 @@ from harmonic import Harmonic_Analysis
 from node import Node
 import numpy as np
 from scipy.spatial import distance
+from scipy.linalg import eigh, eig
 
 class ANM(Harmonic_Analysis):
 
@@ -41,7 +42,6 @@ class ANM(Harmonic_Analysis):
                         Kirchoff[i, j] = 0
         row, col = np.diag_indices_from(Kirchoff)
         Kirchoff[row, col] = -1 * Kirchoff.sum(axis = 0)
-        print(Kirchoff)
         return Kirchoff
 
     def build_hessian(self, cut_off, gamma):
@@ -53,25 +53,26 @@ class ANM(Harmonic_Analysis):
         3Nx3N matrix
         """
         hessian = np.zeros((3*len(self.nodes), 3*len(self.nodes)))
-        K_mat = self.__kirchoff_matrix(cut_off)
-        print(len(self.nodes), 3*len(self.nodes))
         #Off-Diagonals
-        for i, node_i in enumerate2(self.nodes,step = 3):
-            for j, node_j in enumerate2(self.nodes,step = 3):
-                s0_ij = distance.euclidean(node_i.xyz, node_j.xyz)
-                if node_i != node_j:
-                    for k in range(3):
-                        for l in range(3):
-                            A = node_i.xyz[k] - node_j.xyz[k]
-                            B = node_i.xyz[l] - node_j.xyz[l]
-                            hessian[i+k,j+l] = -1.0 * gamma * A * B / (s0_ij * s0_ij)
-                            print(i, j, k, l, i+k, j+l)
-                else:
-                    #On-Diagonals
-                    for k in range(3):
-                        for l in range(3):
-                            pass
+        for i in range(len(self.nodes)):
+            for j in range(i+1):
+                i3 = i*3
+                i33 = i3+3
+                j3 = j*3
+                j33 = j3+3
+                super_element = np.zeros((3,3), dtype=float)
+                dist = distance.euclidean(self.nodes[i].xyz, self.nodes[j].xyz)
+                if self.nodes[i] != self.nodes[j]:
+                    for n in range(3):
+                        for m in range(3):
+                            A = self.nodes[i].xyz[n] - self.nodes[j].xyz[n]
+                            B = self.nodes[i].xyz[m] - self.nodes[j].xyz[m]
+                            super_element[n,m] = gamma*A*B/(dist*dist)
+                hessian[i3:i33, j3:j33] = hessian[j3:j33, i3:i33] = super_element
+                hessian[j3:j33, j3:j33] -= super_element
+        print(check_symmetric(hessian))
         return hessian
+
     # def build_hessian(self):
     #     """
     #     The hessian is an NxN matrix of 3x3 submatrices where N is the
@@ -100,10 +101,15 @@ class ANM(Harmonic_Analysis):
     #     # Hessian[row,col] = Hessian.sum(axis=0)
     #     return np.asarray(Hessian)
 
-def enumerate2(xs, start=0, step=1):
+def check_symmetric(a, tol=1e-8):
+    return np.allclose(a, a.T, atol=tol)
+
+def enumerate_step(xs, start=0, step=1):
     for x in xs:
         yield (start, x)
         start += step
 
 if __name__ == "__main__":
-    print(ANM("4ake.pdb").build_hessian(15.00, 1))
+    h = ANM("4ake.pdb").build_hessian(15.00, 1)
+    print(h)
+    print(eigh(h))
