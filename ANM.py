@@ -4,6 +4,30 @@ import numpy as np
 from scipy.spatial import distance
 from scipy.linalg import eigh, eig
 
+residue_masses = {"GLY": 57.02147,
+                  "ALA": 71.03712,
+                  "SER": 87.03203,
+                  "PRO": 97.05277,
+                  "VAL": 99.06842,
+                  "THR": 101.04768,
+                  "CYS": 103.00919,
+                  "ILE": 113.08507,
+                  "LEU": 113.08407,
+                  "ASN": 114.04293,
+                  "ASP": 115.02695,
+                  "GLN": 128.05858,
+                  "LYS": 128.09497,
+                  "GLU": 129.04260,
+                  "MET": 131.04049,
+                  "HIS": 137.05891,
+                  "PHE": 147.06842,
+                  "ARG": 156.10112,
+                  "TYR": 163.06333,
+                  "TRP": 186.07932,
+                  "HSE": 101.04768,
+                  "HSL": 83.03712,
+                  "GLP": 111.03203}
+
 class ANM(Harmonic_Analysis):
 
     def __init__(self, input_file):
@@ -70,8 +94,11 @@ class ANM(Harmonic_Analysis):
                             super_element[n,m] = gamma*A*B/(dist*dist)
                 hessian[i3:i33, j3:j33] = hessian[j3:j33, i3:i33] = super_element
                 hessian[j3:j33, j3:j33] -= super_element
-        print(check_symmetric(hessian))
-        return hessian
+        mass_mat = np.zeros((3*len(self.nodes), 3*len(self.nodes)), dtype=float)
+        molwt = [residue_masses[i.name] for i in self.nodes for j in range(3)]
+        for i in range(len(molwt)):
+            mass_mat[i,i] = molwt[i] ** -0.5
+        return np.dot(np.dot(mass_mat, hessian), mass_mat)
 
     # def build_hessian(self):
     #     """
@@ -111,5 +138,6 @@ def enumerate_step(xs, start=0, step=1):
 
 if __name__ == "__main__":
     h = ANM("4ake.pdb").build_hessian(15.00, 1)
-    print(h)
-    print(eigh(h))
+    w,v = np.linalg.eigh(h)
+    for i in w:
+        print(np.sqrt(i))
